@@ -10,15 +10,15 @@ import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Bundle
 import android.view.Display
-import android.view.Surface
 import android.view.MotionEvent
+import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.WindowManager
-import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.features.settings.model.IntSetting
+import org.citra.citra_emu.NativeLibrary
 
-class SecondaryDisplay(val context: Context) {
+class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
     private var pres: SecondaryDisplayPresentation? = null
     private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private val vd: VirtualDisplay
@@ -35,6 +35,7 @@ class SecondaryDisplay(val context: Context) {
             vdSurface,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
         )
+        displayManager.registerDisplayListener(this, null)
     }
 
     fun updateSurface() {
@@ -72,14 +73,14 @@ class SecondaryDisplay(val context: Context) {
         }
 
         // decide if we are going to the external display or the internal one
-        var display = getCustomerDisplay()
+        var display = getExternalDisplay(context)
         if (display == null ||
             IntSetting.SECONDARY_DISPLAY_LAYOUT.int == SecondaryDisplayLayout.NONE.int) {
             display = vd.display
         }
 
         // if our presentation is already on the right display, ignore
-        if (pres?.display == display) return;
+        if (pres?.display == display) return
 
         // otherwise, make a new presentation
         releasePresentation()
@@ -98,13 +99,6 @@ class SecondaryDisplay(val context: Context) {
         }
     }
 
-    private fun getCustomerDisplay(): Display? {
-        val displays = displayManager.displays
-        // code taken from MelonDS dual screen - should fix odin 2 detection bug
-        return displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-            .firstOrNull { it.displayId != Display.DEFAULT_DISPLAY && it.name != "Built-in Screen" && it.name != "HiddenDisplay"}
-    }
-
     fun releasePresentation() {
         try {
             pres?.dismiss()
@@ -113,16 +107,35 @@ class SecondaryDisplay(val context: Context) {
     }
 
     fun releaseVD() {
+        displayManager.unregisterDisplayListener(this)
         vd.release()
+    }
+
+    override fun onDisplayAdded(displayId: Int) {
+        updateDisplay()
+    }
+
+    override fun onDisplayRemoved(displayId: Int) {
+        updateDisplay()
+    }
+    override fun onDisplayChanged(displayId: Int) {
+        updateDisplay()
     }
 }
 class SecondaryDisplayPresentation(
     context: Context, display: Display, val parent: SecondaryDisplay
 ) : Presentation(context, display) {
     private lateinit var surfaceView: SurfaceView
+    private var touchscreenPointerId = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window?.setFlags(
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        )
 
         // Initialize SurfaceView
         surfaceView = SurfaceView(context)
@@ -141,6 +154,42 @@ class SecondaryDisplayPresentation(
                 parent.destroySurface()
             }
         })
+
+        this.surfaceView.setOnTouchListener { _, event ->
+
+            val pointerIndex = event.actionIndex
+            val pointerId = event.getPointerId(pointerIndex)
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                    if (touchscreenPointerId == -1) {
+                        touchscreenPointerId = pointerId
+                        NativeLibrary.onSecondaryTouchEvent(
+                            event.getX(pointerIndex),
+                            event.getY(pointerIndex),
+                            true
+                        )
+                    }
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val index = event.findPointerIndex(touchscreenPointerId)
+                    if (index != -1) {
+                        NativeLibrary.onSecondaryTouchMoved(
+                            event.getX(index),
+                            event.getY(index)
+                        )
+                    }
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (pointerId == touchscreenPointerId) {
+                        NativeLibrary.onSecondaryTouchEvent(0f, 0f, false)
+                        touchscreenPointerId = -1
+                    }
+                }
+            }
+            true
+        }
 
         setContentView(surfaceView) // Set SurfaceView as content
     }
