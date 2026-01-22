@@ -24,7 +24,7 @@ class SecondaryDisplay(val context: Context) {
 
     init {
         val st = SurfaceTexture(0)
-        st.setDefaultBufferSize(1920, 1080)
+        st.setDefaultBufferSize(1,1)
         val vdSurface = Surface(st)
         vd = displayManager.createVirtualDisplay(
             "HiddenDisplay",
