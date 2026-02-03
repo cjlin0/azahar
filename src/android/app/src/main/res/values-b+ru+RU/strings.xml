@@ -19,6 +19,7 @@
     <string name="about_description">Версия сборки, разработчики и другое</string>
     <string name="theme_and_color_description">Настройка внешнего вида приложения</string>
     <string name="install_cia_title">Установить CIA</string>
+
     <!-- GPU driver installation -->
     <string name="select_gpu_driver">Выбрать драйвер GPU</string>
     <string name="select_gpu_driver_title">Заменить текущий драйвер GPU устройства?</string>
@@ -64,8 +65,6 @@
     <string name="controller_triggers">Триггеры</string>
     <string name="controller_trigger">Триггер</string>
     <string name="controller_dpad">Крестовина</string>
-    <string name="controller_axis_vertical">Ось вверх/вниз</string>
-    <string name="controller_axis_horizontal">Ось влево/вправо</string>
     <string name="input_dialog_title">Привязка %1$s %2$s</string>
     <string name="input_dialog_description">Нажмите или отклоните элемент управления.</string>
     <string name="input_binding">Привязки ввода</string>

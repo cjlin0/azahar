@@ -391,40 +391,6 @@ GameList::GameList(PlayTime::PlayTimeManager& play_time_manager_, GMainWindow* p
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    if (UISettings::values.show_3ds_files_warning.GetValue()) {
-
-        warning_layout = new QHBoxLayout;
-        deprecated_3ds_warning = new QLabel;
-        deprecated_3ds_warning->setText(
-            tr("IMPORTANT: Encrypted files and .3ds files are no longer supported. Decrypting "
-               "and/or renaming to .cci may be necessary. <a "
-               "href='https://azahar-emu.org/blog/game-loading-changes/'>Learn more.</a>"));
-        deprecated_3ds_warning->setOpenExternalLinks(true);
-        deprecated_3ds_warning->setStyleSheet(
-            QString::fromStdString("color: black; font-weight: bold;"));
-
-        warning_hide = new QPushButton(tr("Don't show again"));
-        warning_hide->setStyleSheet(
-            QString::fromStdString("color: blue; text-decoration: underline;"));
-        warning_hide->setFlat(true);
-        warning_hide->setCursor(Qt::PointingHandCursor);
-
-        connect(warning_hide, &QPushButton::clicked, [this]() {
-            warning_widget->setVisible(false);
-            UISettings::values.show_3ds_files_warning.SetValue(false);
-        });
-
-        warning_layout->addWidget(deprecated_3ds_warning);
-        warning_layout->addStretch();
-        warning_layout->addWidget(warning_hide);
-        warning_layout->setContentsMargins(3, 3, 3, 3);
-        warning_widget = new QWidget;
-        warning_widget->setStyleSheet(QString::fromStdString("background-color: khaki;"));
-        warning_widget->setLayout(warning_layout);
-
-        layout->addWidget(warning_widget);
-    }
-
     layout->addWidget(tree_view);
     layout->addWidget(search_field);
     setLayout(layout);
@@ -1107,18 +1073,26 @@ void GameList::LoadInterfaceLayout() {
 }
 
 const QStringList GameList::supported_file_extensions = {
-    QStringLiteral("3dsx"),  QStringLiteral("elf"),  QStringLiteral("axf"),
-    QStringLiteral("cci"),   QStringLiteral("cxi"),  QStringLiteral("app"),
-    QStringLiteral("z3dsx"), QStringLiteral("zcci"), QStringLiteral("zcxi"),
+    QStringLiteral("3dsx"), QStringLiteral("elf"), QStringLiteral("axf"),   QStringLiteral("cci"),
+    QStringLiteral("cxi"),  QStringLiteral("app"), QStringLiteral("z3dsx"), QStringLiteral("zcci"),
+    QStringLiteral("zcxi"), QStringLiteral("3ds"),
 };
 
 void GameList::RefreshGameDirectory() {
-
     // Do not scan directories when the system is powered on, it will be
     // repopulated on shutdown anyways.
     if (Core::System::GetInstance().IsPoweredOn()) {
         return;
     }
+
+    const auto time_now = std::chrono::steady_clock::now();
+
+    // Max of 1 refresh every 1 second.
+    if (time_last_refresh + std::chrono::seconds(1) > time_now) {
+        return;
+    }
+
+    time_last_refresh = time_now;
 
     if (!UISettings::values.game_dirs.isEmpty() && current_worker != nullptr) {
         LOG_INFO(Frontend, "Change detected in the applications directory. Reloading game list.");

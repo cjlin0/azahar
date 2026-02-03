@@ -566,8 +566,13 @@ void QtConfig::ReadMiscellaneousValues() {
 
     ReadBasicSetting(Settings::values.log_filter);
     ReadBasicSetting(Settings::values.log_regex_filter);
+#ifdef __unix__
     ReadBasicSetting(Settings::values.enable_gamemode);
+#endif
+#ifdef ENABLE_QT_UPDATE_CHECKER
     ReadBasicSetting(UISettings::values.check_for_update_on_start);
+    ReadBasicSetting(UISettings::values.update_check_channel);
+#endif
 
     qt_config->endGroup();
 }
@@ -810,7 +815,9 @@ void QtConfig::ReadUIValues() {
         UISettings::values.theme =
             ReadSetting(QStringLiteral("theme"), QString::fromUtf8(UISettings::themes[0].second))
                 .toString();
+#ifdef USE_DISCORD_PRESENCE
         ReadBasicSetting(UISettings::values.enable_discord_presence);
+#endif
         ReadBasicSetting(UISettings::values.screenshot_resolution_factor);
 
         ReadUILayoutValues();
@@ -845,7 +852,6 @@ void QtConfig::ReadUIGameListValues() {
     ReadBasicSetting(UISettings::values.game_list_row_2);
     ReadBasicSetting(UISettings::values.game_list_hide_no_icon);
     ReadBasicSetting(UISettings::values.game_list_single_line_mode);
-    ReadBasicSetting(UISettings::values.show_3ds_files_warning);
 
     ReadBasicSetting(UISettings::values.show_compat_column);
     ReadBasicSetting(UISettings::values.show_region_column);
@@ -1137,9 +1143,13 @@ void QtConfig::SaveMiscellaneousValues() {
 
     WriteBasicSetting(Settings::values.log_filter);
     WriteBasicSetting(Settings::values.log_regex_filter);
+#ifdef __unix__
     WriteBasicSetting(Settings::values.enable_gamemode);
+#endif
+#ifdef ENABLE_QT_UPDATE_CHECKER
     WriteBasicSetting(UISettings::values.check_for_update_on_start);
-
+    WriteBasicSetting(UISettings::values.update_check_channel);
+#endif
     qt_config->endGroup();
 }
 
@@ -1328,7 +1338,9 @@ void QtConfig::SaveUIValues() {
     if (global) {
         WriteSetting(QStringLiteral("theme"), UISettings::values.theme,
                      QString::fromUtf8(UISettings::themes[0].second));
+#ifdef USE_DISCORD_PRESENCE
         WriteBasicSetting(UISettings::values.enable_discord_presence);
+#endif
         WriteBasicSetting(UISettings::values.screenshot_resolution_factor);
 
         SaveUILayoutValues();
@@ -1363,7 +1375,6 @@ void QtConfig::SaveUIGameListValues() {
     WriteBasicSetting(UISettings::values.game_list_row_2);
     WriteBasicSetting(UISettings::values.game_list_hide_no_icon);
     WriteBasicSetting(UISettings::values.game_list_single_line_mode);
-    WriteBasicSetting(UISettings::values.show_3ds_files_warning);
 
     WriteBasicSetting(UISettings::values.show_compat_column);
     WriteBasicSetting(UISettings::values.show_region_column);

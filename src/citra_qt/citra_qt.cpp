@@ -60,7 +60,9 @@
 #include "citra_qt/debugger/profiler.h"
 #include "citra_qt/debugger/registers.h"
 #include "citra_qt/debugger/wait_tree.h"
+#ifdef USE_DISCORD_PRESENCE
 #include "citra_qt/discord.h"
+#endif
 #include "citra_qt/dumping/dumping_dialog.h"
 #include "citra_qt/game_list.h"
 #include "citra_qt/hotkeys.h"
@@ -171,11 +173,20 @@ void GMainWindow::ShowCommandOutput(std::string title, std::string message) {
 #endif
 }
 
-bool IsPrerelease() {
+bool IsPrereleaseBuild() {
     return ((strstr(Common::g_build_fullname, "alpha") != NULL) ||
             (strstr(Common::g_build_fullname, "beta") != NULL) ||
             (strstr(Common::g_build_fullname, "rc") != NULL));
 }
+
+#ifdef ENABLE_QT_UPDATE_CHECKER
+bool ShouldCheckForPrereleaseUpdates() {
+    const bool update_channel = UISettings::values.update_check_channel.GetValue();
+    const bool using_prerelease_channel =
+        (update_channel == UISettings::UpdateCheckChannels::PRERELEASE);
+    return (IsPrereleaseBuild() || using_prerelease_channel);
+}
+#endif
 
 GMainWindow::GMainWindow(Core::System& system_)
     : ui{std::make_unique<Ui::MainWindow>()}, system{system_}, movie{system.Movie()},
@@ -341,8 +352,10 @@ GMainWindow::GMainWindow(Core::System& system_)
     default_theme_paths = QIcon::themeSearchPaths();
     UpdateUITheme();
 
+#ifdef USE_DISCORD_PRESENCE
     SetDiscordEnabled(UISettings::values.enable_discord_presence.GetValue());
     discord_rpc->Update();
+#endif
 
     play_time_manager = std::make_unique<PlayTime::PlayTimeManager>();
 
@@ -406,7 +419,8 @@ GMainWindow::GMainWindow(Core::System& system_)
     if (UISettings::values.check_for_update_on_start) {
         update_future = QtConcurrent::run([]() -> QString {
             const std::optional<std::string> latest_release_tag =
-                UpdateChecker::GetLatestRelease(IsPrerelease());
+                UpdateChecker::GetLatestRelease(ShouldCheckForPrereleaseUpdates());
+
             if (latest_release_tag && latest_release_tag.value() != Common::g_build_fullname) {
                 return QString::fromStdString(latest_release_tag.value());
             }
@@ -1511,7 +1525,10 @@ void GMainWindow::ShutdownGame() {
 
     AllowOSSleep();
 
+#ifdef USE_DISCORD_PRESENCE
     discord_rpc->Pause();
+#endif
+
     emu_thread->RequestStop();
 
     // Release emu threads from any breakpoints
@@ -1539,8 +1556,9 @@ void GMainWindow::ShutdownGame() {
 
     OnCloseMovie();
 
+#ifdef USE_DISCORD_PRESENCE
     discord_rpc->Update();
-
+#endif
 #ifdef __unix__
     Common::Linux::StopGamemode();
 #endif
@@ -1591,6 +1609,7 @@ void GMainWindow::ShutdownGame() {
     secondary_window->ReleaseRenderTarget();
 }
 
+#ifdef ENABLE_DEVELOPER_OPTIONS
 void GMainWindow::StartLaunchStressTest(const QString& game_path) {
     QThreadPool::globalInstance()->start([this, game_path] {
         do {
@@ -1600,6 +1619,7 @@ void GMainWindow::StartLaunchStressTest(const QString& game_path) {
         } while (emulation_running);
     });
 }
+#endif
 
 void GMainWindow::StoreRecentFile(const QString& filename) {
     UISettings::values.recent_files.prepend(filename);
@@ -2476,8 +2496,9 @@ void GMainWindow::OnStartGame() {
     play_time_manager->SetProgramId(game_title_id);
     play_time_manager->Start();
 
+#ifdef USE_DISCORD_PRESENCE
     discord_rpc->Update();
-
+#endif
 #ifdef __unix__
     Common::Linux::StartGamemode();
 #endif
@@ -2801,7 +2822,9 @@ void GMainWindow::OnConfigure() {
     const int old_input_profile_index = Settings::values.current_input_profile_index;
     const auto old_input_profiles = Settings::values.input_profiles;
     const auto old_touch_from_button_maps = Settings::values.touch_from_button_maps;
+#ifdef USE_DISCORD_PRESENCE
     const bool old_discord_presence = UISettings::values.enable_discord_presence.GetValue();
+#endif
 #ifdef __unix__
     const bool old_gamemode = Settings::values.enable_gamemode.GetValue();
 #endif
@@ -2813,9 +2836,11 @@ void GMainWindow::OnConfigure() {
         if (UISettings::values.theme != old_theme) {
             UpdateUITheme();
         }
+#ifdef USE_DISCORD_PRESENCE
         if (UISettings::values.enable_discord_presence.GetValue() != old_discord_presence) {
             SetDiscordEnabled(UISettings::values.enable_discord_presence.GetValue());
         }
+#endif
 #ifdef __unix__
         if (Settings::values.enable_gamemode.GetValue() != old_gamemode) {
             SetGamemodeEnabled(Settings::values.enable_gamemode.GetValue());
@@ -3158,7 +3183,7 @@ void GMainWindow::OnCompressFile() {
 
     QStringList filepaths =
         QFileDialog::getOpenFileNames(this, tr("Load 3DS ROM Files"), UISettings::values.roms_path,
-                                      tr("3DS ROM Files (*.cia *.cci *.3dsx *.cxi)") +
+                                      tr("3DS ROM Files (*.cia *.cci *.3dsx *.cxi *.3ds)") +
                                           QStringLiteral(";;") + tr("All Files (*.*)"));
 
     QString out_path;
@@ -3838,8 +3863,8 @@ static bool IsSingleFileDropEvent(const QMimeData* mime) {
     return mime->hasUrls() && mime->urls().length() == 1;
 }
 
-static const std::array<std::string, 10> AcceptedExtensions = {
-    "cci", "cxi", "bin", "3dsx", "app", "elf", "axf", "zcci", "zcxi", "z3dsx"};
+static const std::array<std::string, 11> AcceptedExtensions = {
+    "cci", "cxi", "bin", "3dsx", "app", "elf", "axf", "zcci", "zcxi", "z3dsx", "3ds"};
 
 static bool IsCorrectFileExtension(const QMimeData* mime) {
     const QString& filename = mime->urls().at(0).toLocalFile();
@@ -4057,7 +4082,7 @@ void GMainWindow::OnEmulatorUpdateAvailable() {
     update_prompt.exec();
     if (update_prompt.button(QMessageBox::Yes) == update_prompt.clickedButton()) {
         std::string update_page_url;
-        if (IsPrerelease()) {
+        if (ShouldCheckForPrereleaseUpdates()) {
             update_page_url = "https://github.com/azahar-emu/azahar/releases";
         } else {
             update_page_url = "https://azahar-emu.org/pages/download/";
@@ -4171,18 +4196,16 @@ void GMainWindow::RetranslateStatusBar() {
     multiplayer_state->retranslateUi();
 }
 
-void GMainWindow::SetDiscordEnabled([[maybe_unused]] bool state) {
 #ifdef USE_DISCORD_PRESENCE
+void GMainWindow::SetDiscordEnabled([[maybe_unused]] bool state) {
     if (state) {
         discord_rpc = std::make_unique<DiscordRPC::DiscordImpl>(system);
     } else {
         discord_rpc = std::make_unique<DiscordRPC::NullImpl>();
     }
-#else
-    discord_rpc = std::make_unique<DiscordRPC::NullImpl>();
-#endif
     discord_rpc->Update();
 }
+#endif
 
 #ifdef __unix__
 void GMainWindow::SetGamemodeEnabled(bool state) {

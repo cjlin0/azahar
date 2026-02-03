@@ -403,8 +403,6 @@ System::ResultStatus System::Load(Frontend::EmuWindow& emu_window, const std::st
 
     kernel->UpdateCPUAndMemoryState(program_id, app_mem_mode, app_n3ds_hw_capabilities);
 
-    gpu->ReportLoadingProgramID(program_id);
-
     // Restore any parameters that should be carried through a reset.
     if (auto apt = Service::APT::GetModule(*this)) {
         if (restore_deliver_arg.has_value()) {
@@ -415,6 +413,7 @@ System::ResultStatus System::Load(Frontend::EmuWindow& emu_window, const std::st
             apt->GetAppletManager()->SetSysMenuArg(restore_sys_menu_arg.value());
             restore_sys_menu_arg.reset();
         }
+        apt->SetWirelessRebootInfoBuffer(restore_wireless_reboot_info);
     }
 
     if (restore_plugin_context.has_value()) {
@@ -739,6 +738,7 @@ void System::Reset() {
     if (auto apt = Service::APT::GetModule(*this)) {
         restore_deliver_arg = apt->GetAppletManager()->ReceiveDeliverArg();
         restore_sys_menu_arg = apt->GetAppletManager()->GetSysMenuArg();
+        restore_wireless_reboot_info = apt->GetWirelessRebootInfoBuffer();
     }
     if (auto plg_ldr = Service::PLGLDR::GetService(*this)) {
         restore_plugin_context = plg_ldr->GetPluginLoaderContext();
@@ -896,19 +896,26 @@ void System::serialize(Archive& ar, const unsigned int file_version) {
         timing->UnlockEventQueue();
         cheat_engine.Connect(cheats_pid);
 
+        if (Settings::values.custom_textures) {
+            custom_tex_manager->FindCustomTextures();
+        }
+
         // Re-register gpu callback, because gsp service changed after service_manager got
         // serialized
         auto gsp = service_manager->GetService<Service::GSP::GSP_GPU>("gsp::Gpu");
         gpu->SetInterruptHandler(
             [gsp](Service::GSP::InterruptId interrupt_id) { gsp->SignalInterrupt(interrupt_id); });
 
-        // Switch the shader cache to the title running when the savestate was created
+        // Apply per program settings and switch the shader cache to the title running when the
+        // savestate was created.
+        // TODO(PabloMK7): Find better way to obtain the program ID.
         const u32 thread_id = gsp->GetActiveClientThreadId();
         if (thread_id != std::numeric_limits<u32>::max()) {
             const auto thread = kernel->GetThreadByID(thread_id);
             if (thread) {
                 const std::shared_ptr<Kernel::Process> process = thread->owner_process.lock();
                 if (process) {
+                    gpu->ApplyPerProgramSettings(process->codeset->program_id);
                     gpu->Renderer().Rasterizer()->SwitchDiskResources(process->codeset->program_id);
                 }
             }

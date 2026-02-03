@@ -32,7 +32,6 @@
     <string name="select_citra_user_folder_home_description">Altera os arquivos que o Azahar usa para carregar aplicativos</string>
     <string name="theme_and_color_description">Modificar a aparência do aplicativo</string>
     <string name="install_cia_title">Instalar arquivo CIA</string>
-    <string name="warning_3ds_files"><![CDATA[Arquivos criptografados e arquivos .3ds não são mais suportados. Talvez seja necessário descriptografá-los e/ou renomeá-los para .cci. <a href=\"https://azahar-emu.org/blog/game-loading-changes/\">Saiba mais.</a>]]></string>
 
     <!-- GPU driver installation -->
     <string name="select_gpu_driver">Selecionar driver da GPU</string>
@@ -119,8 +118,6 @@
     <string name="controller_dpad_axis_description">Alguns controles podem não ser capazes de mapear os D-pads para um eixo. Se esse for o caso, use a seção de D-Pad (Botões).</string>
     <string name="controller_dpad_button">D-Pad (Botão)</string>
     <string name="controller_dpad_button_description">Só mapeie o D-pad para isso se você se você estiver encontrando problemas com o mapeamento de botão do D-Pad (Eixo).</string>
-    <string name="controller_axis_vertical">Eixo vertical</string>
-    <string name="controller_axis_horizontal">Eixo horizontal</string>
     <string name="direction_up">Cima</string>
     <string name="direction_down">Baixo</string>
     <string name="direction_left">Esquerda</string>
@@ -129,8 +126,6 @@
     <string name="input_dialog_description">Pressione ou mova uma entrada.</string>
     <string name="input_binding">Mapeamento de controles</string>
     <string name="input_binding_description">Pressione ou mova um botão/alavanca para mapear para %1$s.</string>
-    <string name="input_binding_description_vertical_axis">Mova o seu joystick para baixo</string>
-    <string name="input_binding_description_horizontal_axis">Mova o seu joystick para a direita</string>
     <string name="button_home">Menu Principal</string>
     <string name="button_swap">Trocar telas</string>
     <string name="button_turbo">Turbo</string>
@@ -377,8 +372,6 @@
     <string name="auto_select">Seleção Automática</string>
     <string name="start">Iniciar</string>
     <string name="cancelling">Cancelando...</string>
-    <string name="important">Importante</string>
-    <string name="dont_show_again">Não mostrar novamente</string>
     <string name="visibility">Visibilidade</string>
     <string name="information">Informação</string>
 

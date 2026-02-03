@@ -36,7 +36,6 @@
     <string name="select_citra_user_folder_home_description">Changes the files that Azahar uses to load applications</string>
     <string name="theme_and_color_description">Modify the look of the app</string>
     <string name="install_cia_title">Install CIA</string>
-    <string name="warning_3ds_files"><![CDATA[Encrypted files and .3ds files are no longer supported. Decrypting and/or renaming to .cci may be necessary. <a href="https://azahar-emu.org/blog/game-loading-changes/">Learn more.</a>]]></string>
 
     <!-- GPU driver installation -->
     <string name="select_gpu_driver">Select GPU driver</string>
@@ -130,8 +129,8 @@
     <string name="controller_dpad_axis_description">Some controllers may not be able to map their D-pad as an axis. If that\'s the case, use the D-Pad (buttons) section.</string>
     <string name="controller_dpad_button">D-Pad (Button)</string>
     <string name="controller_dpad_button_description">Only map the D-pad to these if you\'re facing issues with the D-Pad (Axis) button mappings.</string>
-    <string name="controller_axis_vertical">Up/Down Axis</string>
-    <string name="controller_axis_horizontal">Left/Right Axis</string>
+    <string name="controller_axis_vertical">Vertical Axis</string>
+    <string name="controller_axis_horizontal">Horizontal Axis</string>
     <string name="direction_up">Up</string>
     <string name="direction_down">Down</string>
     <string name="direction_left">Left</string>
@@ -140,8 +139,8 @@
     <string name="input_dialog_description">Press or move an input.</string>
     <string name="input_binding">Input Binding</string>
     <string name="input_binding_description">Press or move an input to bind it to %1$s.</string>
-    <string name="input_binding_description_vertical_axis">Move your joystick down</string>
-    <string name="input_binding_description_horizontal_axis">Move your joystick right</string>
+    <string name="input_binding_description_vertical_axis">Press UP on your joystick.</string>
+    <string name="input_binding_description_horizontal_axis">Press RIGHT on your joystick.</string>
     <string name="button_a" translatable="false">A</string>
     <string name="button_b" translatable="false">B</string>
     <string name="button_select" translatable="false">SELECT</string>
@@ -398,8 +397,6 @@
     <string name="auto_select">Auto-Select</string>
     <string name="start">Start</string>
     <string name="cancelling">Cancelling…</string>
-    <string name="important">Important</string>
-    <string name="dont_show_again">Don\'t show again</string>
     <string name="visibility">Visibility</string>
     <string name="information">Information</string>
 
