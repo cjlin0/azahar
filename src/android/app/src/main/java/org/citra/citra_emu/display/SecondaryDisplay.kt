@@ -6,6 +6,7 @@ package org.citra.citra_emu.display
 
 import android.app.Presentation
 import android.content.Context
+import android.graphics.SurfaceTexture
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Bundle
@@ -24,18 +25,27 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
     private val vd: VirtualDisplay
 
     init {
+        // LG v60 fix: Create real surface, or WideMode tool will crash
+        // when it queries this display
         val st = SurfaceTexture(0)
         st.setDefaultBufferSize(1,1)
         val vdSurface = Surface(st)
+
         vd = displayManager.createVirtualDisplay(
             "HiddenDisplay",
             1920,
             1080,
             320,
-            vdSurface,
+	    vdSurface,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
         )
-        displayManager.registerDisplayListener(this, null)
+        // LG v60 fix: Since the folding screen is not directly addressable,
+        // the user must run WideMode (creating 1 big display and manually
+        // partitioning the layout). The refresh event
+        // will disable WideMode and disconnect the display.
+        // Obviously, this is not a proper fix because other devices with
+        // real 2nd displays need to register them properly.
+        //   displayManager.registerDisplayListener(this, null)
     }
 
     fun updateSurface() {
@@ -107,7 +117,8 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
     }
 
     fun releaseVD() {
-        displayManager.unregisterDisplayListener(this)
+        // LG v60 hack: see above.
+        // displayManager.unregisterDisplayListener(this)
         vd.release()
     }
 
